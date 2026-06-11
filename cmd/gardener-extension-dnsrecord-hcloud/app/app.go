@@ -33,6 +33,7 @@ type Options struct {
 	managerOptions     *extensionscmd.ManagerOptions
 	controllerOptions  *extensionscmd.ControllerOptions
 	heartbeatOptions   *heartbeatcmd.Options
+	reconcileOptions   *extensionscmd.ReconcilerOptions
 	controllerSwitches *extensionscmd.SwitchOptions
 	optionAggregator   extensionscmd.OptionAggregator
 }
@@ -57,6 +58,7 @@ func NewOptions() *Options {
 			ExtensionName:        ExtensionName,
 			RenewIntervalSeconds: 30,
 		},
+		reconcileOptions: &extensionscmd.ReconcilerOptions{},
 		controllerSwitches: extensionscmd.NewSwitchOptions(
 			extensionscmd.Switch(dnsrecord.ControllerName, hcloudcontroller.AddToManager),
 			extensionscmd.Switch(heartbeat.ControllerName, heartbeat.AddToManager),
@@ -69,6 +71,7 @@ func NewOptions() *Options {
 		opts.managerOptions,
 		opts.controllerOptions,
 		extensionscmd.PrefixOption("heartbeat-", opts.heartbeatOptions),
+		opts.reconcileOptions,
 		opts.controllerSwitches,
 	)
 
@@ -114,6 +117,10 @@ func (o *Options) run(ctx context.Context) error {
 
 	o.controllerOptions.Completed().Apply(&hcloudcontroller.DefaultAddOptions.Controller)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
+	o.reconcileOptions.Completed().Apply(
+		&hcloudcontroller.DefaultAddOptions.IgnoreOperationAnnotation,
+		&hcloudcontroller.DefaultAddOptions.ExtensionClass,
+	)
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("could not add controllers to manager: %w", err)
