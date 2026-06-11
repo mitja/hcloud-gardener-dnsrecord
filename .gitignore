@@ -1,0 +1,13 @@
+# Binaries
+/bin/
+gardener-extension-dnsrecord-hcloud
+
+# Go
+*.test
+*.out
+/vendor/
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
