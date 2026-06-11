@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gardener-extension-dnsrecord-hcloud
+description: DNSRecord controller for the Hetzner Cloud DNS API (provider type hcloud-dns)
+type: application
+version: 0.1.0
+appVersion: v0.1.0
