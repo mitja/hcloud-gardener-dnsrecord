@@ -1,6 +1,6 @@
-# Binaries
+# Binaries (built artifacts at repo root only — NOT the cmd/ source dir)
 /bin/
-gardener-extension-dnsrecord-hcloud
+/gardener-extension-dnsrecord-hcloud
 
 # Go
 *.test
