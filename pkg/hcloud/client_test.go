@@ -199,3 +199,16 @@ func TestAPIErrorMessage(t *testing.T) {
 		t.Fatalf("error string missing code: %s", err.Error())
 	}
 }
+
+func TestEscapeRRSetName(t *testing.T) {
+	for in, want := range map[string]string{
+		"*.ingress.soil.g": "*.ingress.soil.g",
+		"api.work.g":       "api.work.g",
+		"@":                "@",
+		"weird name":       "weird%20name",
+	} {
+		if got := escapeRRSetName(in); got != want {
+			t.Errorf("escapeRRSetName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

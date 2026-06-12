@@ -192,6 +192,14 @@ func (c *Client) ListZones(ctx context.Context) ([]Zone, error) {
 }
 
 // CreateRRSet creates a new rrset in the given zone.
+// escapeRRSetName escapes an rrset name for use as a URL path segment.
+// url.PathEscape would encode the DNS wildcard label "*" as %2A, which the
+// Hetzner Cloud API rejects with 404 — it expects the literal "*" (verified
+// live 2026-06-12). Escape everything else, then restore the asterisks.
+func escapeRRSetName(name string) string {
+	return strings.ReplaceAll(url.PathEscape(name), "%2A", "*")
+}
+
 func (c *Client) CreateRRSet(ctx context.Context, zoneID int64, rr RRSet) (*RRSet, error) {
 	body := rrsetCreateRequest{Name: rr.Name, Type: rr.Type, TTL: rr.TTL, Records: rr.Records}
 	var resp rrsetResponse
@@ -205,7 +213,7 @@ func (c *Client) CreateRRSet(ctx context.Context, zoneID int64, rr RRSet) (*RRSe
 // GetRRSet fetches a single rrset by relative name and type. Returns an
 // APIError with status 404 if it does not exist.
 func (c *Client) GetRRSet(ctx context.Context, zoneID int64, name, rrType string) (*RRSet, error) {
-	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s", zoneID, url.PathEscape(name), url.PathEscape(rrType))
+	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s", zoneID, escapeRRSetName(name), url.PathEscape(rrType))
 	var resp rrsetResponse
 	if err := c.do(ctx, http.MethodGet, path, nil, &resp); err != nil {
 		return nil, err
@@ -215,20 +223,20 @@ func (c *Client) GetRRSet(ctx context.Context, zoneID int64, name, rrType string
 
 // SetRecords replaces all records of an existing rrset (POST .../actions/set_records).
 func (c *Client) SetRecords(ctx context.Context, zoneID int64, name, rrType string, records []Record) error {
-	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s/actions/set_records", zoneID, url.PathEscape(name), url.PathEscape(rrType))
+	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s/actions/set_records", zoneID, escapeRRSetName(name), url.PathEscape(rrType))
 	return c.do(ctx, http.MethodPost, path, setRecordsRequest{Records: records}, nil)
 }
 
 // ChangeTTL updates the TTL of an existing rrset (POST .../actions/change_ttl).
 func (c *Client) ChangeTTL(ctx context.Context, zoneID int64, name, rrType string, ttl *int64) error {
-	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s/actions/change_ttl", zoneID, url.PathEscape(name), url.PathEscape(rrType))
+	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s/actions/change_ttl", zoneID, escapeRRSetName(name), url.PathEscape(rrType))
 	return c.do(ctx, http.MethodPost, path, changeTTLRequest{TTL: ttl}, nil)
 }
 
 // DeleteRRSet deletes an rrset. A 404 from the API is surfaced as an APIError
 // (callers may treat it as success via IsNotFound).
 func (c *Client) DeleteRRSet(ctx context.Context, zoneID int64, name, rrType string) error {
-	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s", zoneID, url.PathEscape(name), url.PathEscape(rrType))
+	path := fmt.Sprintf("/zones/%d/rrsets/%s/%s", zoneID, escapeRRSetName(name), url.PathEscape(rrType))
 	return c.do(ctx, http.MethodDelete, path, nil, nil)
 }
 
