@@ -1,0 +1,30 @@
+# Builds + pushes the image to the private Forgejo registry on the central runner
+# (label "docker"; docker talks to its dind). EVERY image is built + available on Forgejo
+# so the platform never depends on GHCR uptime — this is the always-available copy.
+# This being a PUBLIC repo, a PUBLIC image is ALSO published to ghcr by GitHub Actions on
+# a v* tag (.github/workflows/release.yml); GHCR is the public pull source, Forgejo the
+# fallback. Registry creds = org-level Actions secrets REGISTRY_USER/REGISTRY_TOKEN.
+name: build-image
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+jobs:
+  build:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to the Forgejo registry
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.paasbox.com -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+      - name: Build and push
+        run: |
+          IMG=git.paasbox.com/paasbox/hcloud-gardener-dnsrecord
+          SHORT=$(echo "${GITHUB_SHA}" | cut -c1-12)
+          docker build --build-arg VERSION="$SHORT" -t "$IMG:$SHORT" -t "$IMG:latest" .
+          docker push "$IMG:$SHORT"
+          docker push "$IMG:latest"
+          # On a version tag, also push that tag.
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            docker tag "$IMG:$SHORT" "$IMG:${GITHUB_REF_NAME}"
+            docker push "$IMG:${GITHUB_REF_NAME}"
+          fi
