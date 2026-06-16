@@ -34,6 +34,18 @@ rules:
   - create
   - update
   - patch
+# Namespaces: get/list/watch — REQUIRED since Gardener v1.142's controller-runtime uses a
+# filtered cache that starts a Namespace informer; without this the controller blocks at
+# startup ("failed waiting for *v1.Namespace Informer to sync") and reconciles NO DNSRecord.
+# (Forward-port finding #2, docs/22.)
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
 # Leader election and heartbeat leases.
 - apiGroups:
   - coordination.k8s.io
